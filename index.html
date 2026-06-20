@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -21,12 +20,12 @@
 
     .container {
       width: 100%;
-      max-width: 520px;
+      max-width: 700px;
       padding: 20px 16px 40px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 18px;
     }
 
     /* ===== 标题 ===== */
@@ -35,7 +34,36 @@
       font-weight: 600;
       color: #1a1a2e;
       letter-spacing: 2px;
-      margin-top: 6px;
+      margin-top: 4px;
+    }
+
+    /* ===== 模式选择 ===== */
+    .mode-selector {
+      display: flex;
+      gap: 0;
+      background: #eef0f2;
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .mode-btn {
+      padding: 7px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      color: #666;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+    .mode-btn.active {
+      background: #fff;
+      color: #1a1a2e;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .mode-btn:not(.active):hover {
+      color: #333;
     }
 
     /* ===== 状态栏 ===== */
@@ -70,22 +98,22 @@
       font-weight: 500;
     }
 
-    /* ===== 方格容器 ===== */
+    /* ===== 方格容器（整体放大 50%） ===== */
     .grid-wrapper {
       width: 100%;
       aspect-ratio: 1 / 1;
-      max-width: 420px;
+      max-width: 620px;
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-      padding: 10px;
+      border-radius: 14px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+      padding: 12px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       grid-template-rows: repeat(5, 1fr);
-      gap: 6px;
+      gap: 8px;
       width: 100%;
       height: 100%;
     }
@@ -95,16 +123,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: clamp(24px, 6vw, 40px);
-      font-weight: 600;
+      font-size: clamp(36px, 9vw, 60px);
+      font-weight: 700;
       color: #1a1a2e;
       background: #fff;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
+      border: 2.5px solid #e0e0e0;
+      border-radius: 10px;
       cursor: pointer;
       user-select: none;
       transition: background 0.15s, border-color 0.15s, transform 0.1s;
-      position: relative;
     }
     .cell:hover {
       border-color: #a5b4fc;
@@ -117,7 +144,6 @@
     .cell.correct {
       background: #dcfce7;
       border-color: #86efac;
-      color: #166534;
     }
 
     /* 点击错误时闪烁红色 + 抖动 */
@@ -129,11 +155,18 @@
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-4px); }
-      40% { transform: translateX(4px); }
-      60% { transform: translateX(-3px); }
-      80% { transform: translateX(3px); }
+      20% { transform: translateX(-5px); }
+      40% { transform: translateX(5px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
     }
+
+    /* ===== 困难模式：数字颜色 ===== */
+    .cell.color-red    { color: #dc2626; }
+    .cell.color-blue   { color: #2563eb; }
+    .cell.color-purple { color: #7c3aed; }
+    .cell.color-white  { color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.35), 0 0 1px rgba(0,0,0,0.6); }
+    .cell.color-yellow { color: #ca8a04; }
 
     /* ===== 操作按钮 ===== */
     .btn {
@@ -220,10 +253,84 @@
     .result-card .rating.good { color: #ca8a04; }
     .result-card .rating.average { color: #ea580c; }
 
+    /* ===== 介绍入口文字 ===== */
+    .intro-trigger {
+      font-size: 13px;
+      color: #8b8ba7;
+      cursor: pointer;
+      border-bottom: 1px dashed #d0d0e0;
+      transition: color 0.2s;
+      margin-top: -4px;
+    }
+    .intro-trigger:hover {
+      color: #4f46e5;
+    }
+
+    /* ===== 介绍弹窗 ===== */
+    .intro-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .intro-overlay.active { display: flex; }
+
+    .intro-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 30px 26px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+      animation: popIn 0.25s ease;
+      text-align: left;
+    }
+    .intro-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .intro-card h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin: 16px 0 6px;
+    }
+    .intro-card p, .intro-card li {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #444;
+    }
+    .intro-card ul {
+      padding-left: 18px;
+      margin: 4px 0;
+    }
+    .intro-card li {
+      margin-bottom: 3px;
+    }
+    .intro-card .intro-source {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 16px;
+      text-align: center;
+    }
+    .intro-card .btn {
+      display: block;
+      margin: 20px auto 0;
+    }
+
     /* ===== 历史记录 ===== */
     .history-section {
       width: 100%;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     .history-header {
       display: flex;
@@ -274,20 +381,21 @@
       font-size: 12px;
       color: #ccc;
       text-align: center;
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     /* ===== 响应式 ===== */
-    @media (max-width: 480px) {
+    @media (max-width: 640px) {
       .container { padding: 12px 10px 30px; gap: 14px; }
       h1 { font-size: 22px; }
-      .grid-wrapper { padding: 6px; border-radius: 10px; }
-      .grid { gap: 4px; }
-      .cell { border-radius: 6px; border-width: 1.5px; }
+      .grid-wrapper { max-width: 100%; padding: 8px; border-radius: 10px; }
+      .grid { gap: 5px; }
+      .cell { border-radius: 8px; border-width: 2px; font-size: clamp(28px, 8vw, 44px); }
       .status-bar { font-size: 13px; }
       .status-bar .timer { font-size: 18px; }
       .result-card { padding: 28px 20px 22px; }
       .result-card .time { font-size: 38px; }
+      .mode-btn { padding: 6px 16px; font-size: 13px; }
     }
   </style>
 </head>
@@ -295,6 +403,15 @@
 
 <div class="container">
   <h1>🧠 舒尔特方格</h1>
+
+  <!-- 模式选择：入门 / 困难 -->
+  <div class="mode-selector">
+    <button class="mode-btn active" data-mode="beginner">入门</button>
+    <button class="mode-btn" data-mode="hard">困难</button>
+  </div>
+
+  <!-- 介绍入口 -->
+  <div class="intro-trigger" id="introTrigger">什么是舒尔特训练？</div>
 
   <!-- 状态栏：计时 / 当前目标 / 历史最快 -->
   <div class="status-bar">
@@ -323,6 +440,33 @@
     </div>
   </div>
 
+  <!-- 介绍弹窗 -->
+  <div class="intro-overlay" id="introOverlay">
+    <div class="intro-card">
+      <h3>什么是舒尔特方格？</h3>
+      <div class="intro-body">
+        <p><strong>舒尔特方格</strong>（Schulte Grid）由德国心理学家瓦尔特·舒尔特（Walter Schulte，1910–1972）于 20 世纪 60 年代开发，最初用于诊断和评估注意力障碍，后来被广泛用作注意力与视觉感知的训练工具。</p>
+
+        <h4>训练方法</h4>
+        <p>在一个 5×5 的方格中，25 个数字被打乱排列。你需要按 <strong>1 → 2 → 3 → … → 25</strong> 的顺序，以最快的速度依次点击每个数字。完成用时越短，说明你的注意力集中程度和信息处理效率越高。</p>
+
+        <h4>训练效果</h4>
+        <ul>
+          <li><strong>注意力</strong> — 提升持续专注能力和抗干扰能力</li>
+          <li><strong>视觉感知</strong> — 扩大和加快视觉搜索范围与速度</li>
+          <li><strong>反应速度</strong> — 缩短从观察到决策的反应时间</li>
+          <li><strong>阅读效率</strong> — 训练快速定位信息和跳读能力</li>
+        </ul>
+
+        <h4>评价标准</h4>
+        <p>以 5×5 方格为例：<strong>15 秒以内</strong>完成属于优秀水平，<strong>25 秒以内</strong>属于良好水平，超过 25 秒则需要进一步练习。</p>
+
+        <p class="intro-source">—— 以上内容综合自心理学文献与注意力训练一线实践</p>
+      </div>
+      <button class="btn btn-primary" id="introBackBtn">已了解，返回</button>
+    </div>
+  </div>
+
   <!-- 历史记录 -->
   <div class="history-section">
     <div class="history-header">
@@ -343,6 +487,9 @@
   /** 当前方格内的数字排列（一维数组） */
   let currentNumbers = [];
 
+  /** 当前模式：'beginner' | 'hard' */
+  let currentMode = 'beginner';
+
   /** 下一个需要点击的数字（从 1 开始） */
   let nextTarget = 1;
 
@@ -353,6 +500,9 @@
   let isFinished = false;         // 是否已完成（或已结束）
   /** 已正确点击的数字集合（避免重复点击同一数字） */
   let usedNumbers = new Set();
+
+  /** 困难模式可用的颜色列表 */
+  const HARD_COLORS = ['red', 'blue', 'purple', 'white', 'yellow'];
 
   /** DOM 引用 */
   const gridEl = document.getElementById('grid');
@@ -367,6 +517,7 @@
   const resultRating = document.getElementById('resultRating');
   const resultEmoji = document.getElementById('resultEmoji');
   const historyList = document.getElementById('historyList');
+  const modeBtns = document.querySelectorAll('.mode-btn');
 
   // ================================================================
   //  工具函数
@@ -380,6 +531,11 @@
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
+  }
+
+  /** 从数组中随机取一个元素 */
+  function randomPick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 
   /** 格式化时间为 X.XX 秒 */
@@ -450,14 +606,25 @@
   //  UI 渲染
   // ================================================================
 
-  /** 渲染方格 */
-  function renderGrid(numbers) {
+  /**
+   * 渲染方格
+   * @param {number[]} numbers - 数字排列
+   * @param {'beginner'|'hard'} mode - 当前模式
+   */
+  function renderGrid(numbers, mode) {
     gridEl.innerHTML = '';
     numbers.forEach(num => {
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.num = num;
       cell.textContent = num;
+
+      // 困难模式：给每个数字随机分配颜色
+      if (mode === 'hard') {
+        const color = randomPick(HARD_COLORS);
+        cell.classList.add('color-' + color);
+      }
+
       gridEl.appendChild(cell);
     });
   }
@@ -495,7 +662,7 @@
   //  核心游戏逻辑
   // ================================================================
 
-  /** 重置游戏状态（不清除方格排列） */
+  /** 重置游戏状态 */
   function resetState() {
     usedNumbers.clear();
     nextTarget = 1;
@@ -512,9 +679,9 @@
     usedNumbers.clear();
     // 生成新的随机排列
     currentNumbers = shuffledArray(25);
-    renderGrid(currentNumbers);
+    renderGrid(currentNumbers, currentMode);
 
-    // 重置所有格子样式
+    // 重置所有格子样式（移除颜色类之外的临时样式）
     document.querySelectorAll('.cell').forEach(el => {
       el.classList.remove('correct', 'wrong');
     });
@@ -529,7 +696,7 @@
     updateTimerLoop();
   }
 
-  /** 计时循环（利用 requestAnimationFrame 保持实时更新） */
+  /** 计时循环 */
   function updateTimerLoop() {
     if (!timerStart) return;
     const now = performance.now();
@@ -544,7 +711,6 @@
       cancelAnimationFrame(timerRAF);
       timerRAF = null;
     }
-    // 以停止时的最终时间为准，再用一次 performance.now 精确计算
     if (timerStart) {
       elapsedSeconds = (performance.now() - timerStart) / 1000;
       timerEl.textContent = formatTime(elapsedSeconds) + 's';
@@ -567,7 +733,7 @@
     resultTime.innerHTML = `${formatTime(elapsedSeconds)} <span class="unit">秒</span>`;
     resultRating.textContent = rating.text;
     resultRating.className = 'rating ' + rating.cls;
-    resultEmoji.textContent = rating.text.slice(0, 2);  // 提取 emoji
+    resultEmoji.textContent = rating.text.slice(0, 2);
     overlay.classList.add('active');
 
     // 刷新历史
@@ -612,26 +778,53 @@
     } else {
       // ---- 点击错误 ----
       cell.classList.add('wrong');
-      // 0.3s 后移除红色样式（抖动动画结束后清除）
       setTimeout(() => {
         cell.classList.remove('wrong');
       }, 350);
     }
   }
 
+  /** 切换模式 */
+  function switchMode(mode) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+
+    // 更新按钮高亮状态
+    modeBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+
+    // 如果用过程中切换，立即生成新方格
+    startNewGame();
+  }
+
+  /** 打开 / 关闭介绍弹窗 */
+  const introTrigger = document.getElementById('introTrigger');
+  const introOverlay = document.getElementById('introOverlay');
+  const introBackBtn = document.getElementById('introBackBtn');
+
+  introTrigger.addEventListener('click', () => {
+    introOverlay.classList.add('active');
+  });
+  introBackBtn.addEventListener('click', () => {
+    introOverlay.classList.remove('active');
+  });
+  // 点击弹窗背景也可关闭
+  introOverlay.addEventListener('click', (e) => {
+    if (e.target === introOverlay) introOverlay.classList.remove('active');
+  });
+
   /** 键盘空格重开 */
   function handleKeydown(e) {
     if (e.code === 'Space') {
-      // 防止页面滚动
       e.preventDefault();
-      // 如果弹窗开着，先关掉
       overlay.classList.remove('active');
       startNewGame();
     }
   }
 
   // ================================================================
-  //  按钮绑定
+  //  按钮 & 事件绑定
   // ================================================================
 
   btnStart.addEventListener('click', () => startNewGame());
@@ -648,6 +841,11 @@
     }
   });
 
+  // 模式切换
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+
   // 方格点击委托
   gridEl.addEventListener('click', handleCellClick);
 
@@ -661,7 +859,7 @@
   (function init() {
     // 生成默认随机方格
     currentNumbers = shuffledArray(25);
-    renderGrid(currentNumbers);
+    renderGrid(currentNumbers, currentMode);
     resetState();
     renderHistory();
   })();
@@ -669,5 +867,7 @@
 
 </body>
 </html>
+
+
 
 
