@@ -1,0 +1,673 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>舒尔特方格 - 注意力训练</title>
+  <style>
+    /* ===== 全局样式重置 ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      padding: 20px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* ===== 标题 ===== */
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a1a2e;
+      letter-spacing: 2px;
+      margin-top: 6px;
+    }
+
+    /* ===== 状态栏 ===== */
+    .status-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      color: #555;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .status-bar .timer {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1a2e;
+      font-variant-numeric: tabular-nums;
+    }
+    .status-bar .best {
+      background: #eef2ff;
+      padding: 4px 12px;
+      border-radius: 6px;
+      color: #4f46e5;
+      font-weight: 500;
+    }
+    .status-bar .current-target {
+      background: #f0fdf4;
+      padding: 4px 12px;
+      border-radius: 6px;
+      color: #16a34a;
+      font-weight: 500;
+    }
+
+    /* ===== 方格容器 ===== */
+    .grid-wrapper {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      padding: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 6px;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ===== 每个格子 ===== */
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(24px, 6vw, 40px);
+      font-weight: 600;
+      color: #1a1a2e;
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      position: relative;
+    }
+    .cell:hover {
+      border-color: #a5b4fc;
+    }
+    .cell:active {
+      transform: scale(0.95);
+    }
+
+    /* 正确点击瞬间反馈（短暂闪现绿色后恢复） */
+    .cell.correct {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
+    }
+
+    /* 点击错误时闪烁红色 + 抖动 */
+    .cell.wrong {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+    }
+
+    /* ===== 操作按钮 ===== */
+    .btn {
+      padding: 12px 32px;
+      font-size: 17px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 1px;
+    }
+    .btn:active { transform: scale(0.96); }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #4338ca; }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .btn-secondary:hover { background: #d1d5db; }
+
+    .btn-danger {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      font-size: 13px;
+      padding: 6px 14px;
+    }
+    .btn-danger:hover { background: #fee2e2; }
+
+    .action-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ===== 完成弹窗 ===== */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .overlay.active { display: flex; }
+
+    .result-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 36px 32px 28px;
+      text-align: center;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      animation: popIn 0.25s ease;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .result-card .time {
+      font-size: 48px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 8px 0 4px;
+    }
+    .result-card .unit { font-size: 18px; font-weight: 400; color: #888; }
+    .result-card .rating {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 4px 0 18px;
+    }
+    .result-card .rating.excellent { color: #16a34a; }
+    .result-card .rating.good { color: #ca8a04; }
+    .result-card .rating.average { color: #ea580c; }
+
+    /* ===== 历史记录 ===== */
+    .history-section {
+      width: 100%;
+      margin-top: 6px;
+    }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .history-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border: 1px solid #eef0f2;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: #555;
+    }
+    .history-item .h-time {
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+    .history-item .h-date {
+      color: #999;
+      font-size: 13px;
+    }
+    .history-empty {
+      text-align: center;
+      color: #bbb;
+      font-size: 14px;
+      padding: 18px 0;
+    }
+
+    /* ===== 底部 ===== */
+    .footer-hint {
+      font-size: 12px;
+      color: #ccc;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 480px) {
+      .container { padding: 12px 10px 30px; gap: 14px; }
+      h1 { font-size: 22px; }
+      .grid-wrapper { padding: 6px; border-radius: 10px; }
+      .grid { gap: 4px; }
+      .cell { border-radius: 6px; border-width: 1.5px; }
+      .status-bar { font-size: 13px; }
+      .status-bar .timer { font-size: 18px; }
+      .result-card { padding: 28px 20px 22px; }
+      .result-card .time { font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🧠 舒尔特方格</h1>
+
+  <!-- 状态栏：计时 / 当前目标 / 历史最快 -->
+  <div class="status-bar">
+    <span class="timer" id="timer">0.00s</span>
+    <span class="current-target" id="targetDisplay">目标: 1</span>
+    <span class="best" id="bestDisplay">—</span>
+  </div>
+
+  <!-- 方格区域 -->
+  <div class="grid-wrapper">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- 操作按钮 -->
+  <div class="action-row">
+    <button class="btn btn-primary" id="btnStart">开始训练</button>
+  </div>
+
+  <!-- 完成结果弹窗 -->
+  <div class="overlay" id="overlay">
+    <div class="result-card">
+      <div style="font-size:40px;margin-bottom:2px;" id="resultEmoji">🎉</div>
+      <div class="time" id="resultTime">0.00 <span class="unit">秒</span></div>
+      <div class="rating" id="resultRating">优秀</div>
+      <button class="btn btn-primary" id="btnAgain">再来一次</button>
+    </div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div class="history-section">
+    <div class="history-header">
+      <h2>📋 历史记录</h2>
+      <button class="btn btn-danger" id="btnClear">清除记录</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <div class="footer-hint">按 空格键 快速重开</div>
+</div>
+
+<script>
+  // ================================================================
+  //  数据
+  // ================================================================
+
+  /** 当前方格内的数字排列（一维数组） */
+  let currentNumbers = [];
+
+  /** 下一个需要点击的数字（从 1 开始） */
+  let nextTarget = 1;
+
+  /** 计时相关 */
+  let timerStart = null;          // 开始时间戳 (ms)
+  let timerRAF = null;            // requestAnimationFrame id
+  let elapsedSeconds = 0;         // 当前已用时间（秒）
+  let isFinished = false;         // 是否已完成（或已结束）
+  /** 已正确点击的数字集合（避免重复点击同一数字） */
+  let usedNumbers = new Set();
+
+  /** DOM 引用 */
+  const gridEl = document.getElementById('grid');
+  const timerEl = document.getElementById('timer');
+  const targetEl = document.getElementById('targetDisplay');
+  const bestEl = document.getElementById('bestDisplay');
+  const btnStart = document.getElementById('btnStart');
+  const btnAgain = document.getElementById('btnAgain');
+  const btnClear = document.getElementById('btnClear');
+  const overlay = document.getElementById('overlay');
+  const resultTime = document.getElementById('resultTime');
+  const resultRating = document.getElementById('resultRating');
+  const resultEmoji = document.getElementById('resultEmoji');
+  const historyList = document.getElementById('historyList');
+
+  // ================================================================
+  //  工具函数
+  // ================================================================
+
+  /** 生成 [1, n] 的随机排列（Fisher-Yates 洗牌） */
+  function shuffledArray(n) {
+    const arr = Array.from({ length: n }, (_, i) => i + 1);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  /** 格式化时间为 X.XX 秒 */
+  function formatTime(seconds) {
+    return seconds.toFixed(2);
+  }
+
+  /** 根据用时（秒）给出评价和 emoji */
+  function getRating(seconds) {
+    if (seconds <= 15) return { text: '🏆 优秀', cls: 'excellent' };
+    if (seconds <= 25) return { text: '👍 良好', cls: 'good' };
+    return { text: '💪 一般', cls: 'average' };
+  }
+
+  /** 获取本地 ISO 日期字符串 YYYY-MM-DD */
+  function todayStr() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  // ================================================================
+  //  本地存储
+  // ================================================================
+
+  const STORAGE_KEY = 'schulte_grid_records';
+
+  /** 读取历史记录，返回 { best: number|null, list: Array } */
+  function loadRecords() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { best: null, list: [] };
+      const data = JSON.parse(raw);
+      return {
+        best: typeof data.best === 'number' ? data.best : null,
+        list: Array.isArray(data.list) ? data.list : [],
+      };
+    } catch {
+      return { best: null, list: [] };
+    }
+  }
+
+  /** 保存历史记录 */
+  function saveRecords(best, list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ best, list }));
+  }
+
+  /** 添加一条新纪录，自动更新 best，并保留最近 10 条 */
+  function addRecord(seconds) {
+    const { best, list } = loadRecords();
+    const newBest = best === null ? seconds : Math.min(best, seconds);
+
+    const newList = [
+      { time: seconds, date: todayStr() },
+      ...list,
+    ].slice(0, 10);
+
+    saveRecords(newBest, newList);
+    return newBest;
+  }
+
+  /** 清除所有记录 */
+  function clearRecords() {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  // ================================================================
+  //  UI 渲染
+  // ================================================================
+
+  /** 渲染方格 */
+  function renderGrid(numbers) {
+    gridEl.innerHTML = '';
+    numbers.forEach(num => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.num = num;
+      cell.textContent = num;
+      gridEl.appendChild(cell);
+    });
+  }
+
+  /** 刷新状态栏：计时、目标、最快 */
+  function updateStatusBar() {
+    timerEl.textContent = formatTime(elapsedSeconds) + 's';
+
+    if (isFinished || nextTarget > 25) {
+      targetEl.textContent = '✅ 完成';
+    } else {
+      targetEl.textContent = `目标: ${nextTarget}`;
+    }
+
+    const { best } = loadRecords();
+    bestEl.textContent = best !== null ? `🏅 最快 ${formatTime(best)}s` : '🏅 —';
+  }
+
+  /** 渲染历史记录列表 */
+  function renderHistory() {
+    const { list } = loadRecords();
+    if (list.length === 0) {
+      historyList.innerHTML = '<div class="history-empty">暂无记录</div>';
+      return;
+    }
+    historyList.innerHTML = list.map(item => `
+      <div class="history-item">
+        <span class="h-time">${formatTime(item.time)}s</span>
+        <span class="h-date">${item.date}</span>
+      </div>
+    `).join('');
+  }
+
+  // ================================================================
+  //  核心游戏逻辑
+  // ================================================================
+
+  /** 重置游戏状态（不清除方格排列） */
+  function resetState() {
+    usedNumbers.clear();
+    nextTarget = 1;
+    timerStart = null;
+    elapsedSeconds = 0;
+    isFinished = false;
+    if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
+    overlay.classList.remove('active');
+    updateStatusBar();
+  }
+
+  /** 开始新一局：生成随机排列，重置状态 */
+  function startNewGame() {
+    usedNumbers.clear();
+    // 生成新的随机排列
+    currentNumbers = shuffledArray(25);
+    renderGrid(currentNumbers);
+
+    // 重置所有格子样式
+    document.querySelectorAll('.cell').forEach(el => {
+      el.classList.remove('correct', 'wrong');
+    });
+
+    resetState();
+  }
+
+  /** 开始计时（点击数字 1 时调用） */
+  function startTimer() {
+    timerStart = performance.now();
+    elapsedSeconds = 0;
+    updateTimerLoop();
+  }
+
+  /** 计时循环（利用 requestAnimationFrame 保持实时更新） */
+  function updateTimerLoop() {
+    if (!timerStart) return;
+    const now = performance.now();
+    elapsedSeconds = (now - timerStart) / 1000;
+    timerEl.textContent = formatTime(elapsedSeconds) + 's';
+    timerRAF = requestAnimationFrame(updateTimerLoop);
+  }
+
+  /** 停止计时 */
+  function stopTimer() {
+    if (timerRAF) {
+      cancelAnimationFrame(timerRAF);
+      timerRAF = null;
+    }
+    // 以停止时的最终时间为准，再用一次 performance.now 精确计算
+    if (timerStart) {
+      elapsedSeconds = (performance.now() - timerStart) / 1000;
+      timerEl.textContent = formatTime(elapsedSeconds) + 's';
+    }
+  }
+
+  /** 完成游戏 */
+  function finishGame() {
+    isFinished = true;
+    stopTimer();
+
+    // 保存记录
+    const best = addRecord(elapsedSeconds);
+
+    // 刷新最快显示
+    updateStatusBar();
+
+    // 显示完成弹窗
+    const rating = getRating(elapsedSeconds);
+    resultTime.innerHTML = `${formatTime(elapsedSeconds)} <span class="unit">秒</span>`;
+    resultRating.textContent = rating.text;
+    resultRating.className = 'rating ' + rating.cls;
+    resultEmoji.textContent = rating.text.slice(0, 2);  // 提取 emoji
+    overlay.classList.add('active');
+
+    // 刷新历史
+    renderHistory();
+  }
+
+  // ================================================================
+  //  事件处理
+  // ================================================================
+
+  /** 点击格子的处理 */
+  function handleCellClick(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell || isFinished) return;
+
+    const num = parseInt(cell.dataset.num, 10);
+
+    // 格子已经被正确点过则忽略
+    if (usedNumbers.has(num)) return;
+
+    if (num === nextTarget) {
+      // ---- 点击正确 ----
+      cell.classList.add('correct');
+      usedNumbers.add(num);
+      // 短暂闪烁绿色后恢复原样，不干扰后续视线
+      setTimeout(() => cell.classList.remove('correct'), 300);
+
+      // 如果点击的是数字 1，开始计时
+      if (num === 1) {
+        startTimer();
+      }
+
+      nextTarget++;
+
+      // 更新目标显示
+      targetEl.textContent = `目标: ${nextTarget}`;
+
+      // 点击完数字 25 → 完成
+      if (num === 25) {
+        finishGame();
+      }
+    } else {
+      // ---- 点击错误 ----
+      cell.classList.add('wrong');
+      // 0.3s 后移除红色样式（抖动动画结束后清除）
+      setTimeout(() => {
+        cell.classList.remove('wrong');
+      }, 350);
+    }
+  }
+
+  /** 键盘空格重开 */
+  function handleKeydown(e) {
+    if (e.code === 'Space') {
+      // 防止页面滚动
+      e.preventDefault();
+      // 如果弹窗开着，先关掉
+      overlay.classList.remove('active');
+      startNewGame();
+    }
+  }
+
+  // ================================================================
+  //  按钮绑定
+  // ================================================================
+
+  btnStart.addEventListener('click', () => startNewGame());
+  btnAgain.addEventListener('click', () => {
+    overlay.classList.remove('active');
+    startNewGame();
+  });
+
+  btnClear.addEventListener('click', () => {
+    if (confirm('确定要清除所有历史记录吗？')) {
+      clearRecords();
+      renderHistory();
+      updateStatusBar();
+    }
+  });
+
+  // 方格点击委托
+  gridEl.addEventListener('click', handleCellClick);
+
+  // 键盘监听
+  document.addEventListener('keydown', handleKeydown);
+
+  // ================================================================
+  //  初始化
+  // ================================================================
+
+  (function init() {
+    // 生成默认随机方格
+    currentNumbers = shuffledArray(25);
+    renderGrid(currentNumbers);
+    resetState();
+    renderHistory();
+  })();
+</script>
+
+</body>
+</html>
+
+
